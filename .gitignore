@@ -1,0 +1,8 @@
+node_modules/
+frontend/node_modules/
+functions/node_modules/
+functions/firebase-service-account.json
+.env
+.DS_Store
+/dist
+/build

@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /groups/{g} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    match /children/{childId} {
+      allow read: if isTeacherOfChild(childId) || isParentOfChild(childId) || request.auth.token.role == 'admin';
+      allow create: if request.auth != null && request.auth.token.role in ['admin','teacher'];
+      match /evaluations/{evalId} {
+        allow create: if request.auth != null && request.auth.token.role == 'teacher' && isTeacherOfChild(childId);
+        allow read: if isTeacherOfChild(childId) || isParentOfChild(childId) || request.auth.token.role == 'admin';
+      }
+    }
+    match /aggregates/{childId} {
+      allow read: if isTeacherOfChild(childId) || isParentOfChild(childId) || request.auth.token.role == 'admin';
+      allow write: if request.auth != null && request.auth.token.role == 'admin';
+    }
+    function isTeacherOfChild(childId){
+      return request.auth != null && request.auth.token.role == 'teacher'
+        && request.auth.token.groups != null
+        && get(/databases/$(database)/documents/children/$(childId)).data.groupId in request.auth.token.groups;
+    }
+    function isParentOfChild(childId){
+      return request.auth != null && get(/databases/$(database)/documents/children/$(childId)).data.parent_phone == request.auth.token.phone;
+    }
+  }
+}
